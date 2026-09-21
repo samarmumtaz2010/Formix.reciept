@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FORMIX — Receipt Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--ink:#0f1a30;--muted:#66708a;--line:#e4e8f0;--navy:#0f1f3d;--navy2:#22386a;--onnavy:#fff;--soft:#eef1f7;--ok:#1f7a55;--warn:#a86a00;--bad:#b3261e;--shadow:0 1px 2px rgba(15,31,61,.06),0 8px 24px rgba(15,31,61,.06)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a1120;--card:#111b31;--ink:#e8edf7;--muted:#93a0bd;--line:#1f2c48;--navy:#3d5fc4;--navy2:#5573d0;--soft:#16223d;--ok:#4cc38f;--warn:#e0a63a;--bad:#f27b72;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25)}}
+:root[data-theme="dark"]{--bg:#0a1120;--card:#111b31;--ink:#e8edf7;--muted:#93a0bd;--line:#1f2c48;--navy:#3d5fc4;--navy2:#5573d0;--soft:#16223d;--ok:#4cc38f;--warn:#e0a63a;--bad:#f27b72;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45}
+h1{font-size:22px;letter-spacing:.02em;margin:0}h3{margin:0 0 16px;font-size:15px;display:flex;align-items:center;gap:10px}
+h3 b{width:24px;height:24px;border-radius:50%;background:var(--navy);color:var(--onnavy);display:grid;place-items:center;font-size:12px}
+.sub,.mut{color:var(--muted)}.sub{margin:4px 0 0}
+svg{flex:none}
+.app{display:flex;min-height:100vh}
+.side{width:248px;background:#0b1631;color:#cfd8ee;display:flex;flex-direction:column;position:fixed;inset:0 auto 0 0;z-index:40;transition:transform .25s}
+.brand{display:flex;gap:12px;align-items:center;padding:22px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+.brand img,.top img{width:40px;height:40px;object-fit:contain;background:#fff;border-radius:9px;padding:3px}
+.brand b{color:#fff;letter-spacing:.14em;font-size:16px;display:block}.brand small{font-size:10.5px;color:#8fa0c8;display:block;line-height:1.3}
+.side nav{padding:14px 12px;flex:1}
+.nb{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;margin-bottom:4px;border:0;background:none;color:inherit;font:inherit;font-weight:500;border-radius:10px;cursor:pointer;text-align:left;transition:.15s}
+.nb:hover{background:rgba(255,255,255,.07);color:#fff}.nb.on{background:#22386a;color:#fff}
+.side .foot{padding:12px}
+.col{flex:1;margin-left:248px;min-width:0}
+.top{display:none;position:sticky;top:0;z-index:30;background:#0b1631;color:#fff;align-items:center;gap:12px;padding:10px 14px}
+.top img{width:32px;height:32px}.top b{letter-spacing:.14em}
+.top .icon-btn{color:#fff;background:transparent;border-color:rgba(255,255,255,.3)}
+.ov{display:none;position:fixed;inset:0;background:rgba(5,10,25,.5);z-index:35}.ov.show{display:block}
+.main{padding:28px 32px 60px;max-width:1500px}
+.ph{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:22px}
+.stat .l{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.stat .v{font-size:26px;font-weight:700;margin-top:8px}.stat .s{font-size:12.5px;color:var(--muted);margin-top:2px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:600;cursor:pointer;transition:.15s}
+.btn:hover{border-color:var(--navy);transform:translateY(-1px)}
+.btn.primary{background:var(--navy);color:var(--onnavy);border-color:var(--navy)}.btn.primary:hover{background:var(--navy2)}
+.btn.lg{padding:14px 20px;font-size:14.5px;letter-spacing:.03em;width:100%}
+.btn.danger{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn.sm{padding:7px 12px;font-size:12.5px}
+.icon-btn{width:32px;height:32px;display:inline-grid;place-items:center;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--muted);cursor:pointer;transition:.15s}
+.icon-btn:hover{color:var(--navy);border-color:var(--navy)}.icon-btn.danger:hover{color:var(--bad);border-color:var(--bad)}
+.ra{display:flex;gap:6px;justify-content:flex-end}
+.tw{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;min-width:760px}
+.t th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.t td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle}
+.t tr:last-child td{border-bottom:0}.t td.r,.t th.r{text-align:right}
+.st{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
+.st.paid{background:rgba(31,122,85,.13);color:var(--ok)}.st.part{background:rgba(168,106,0,.15);color:var(--warn)}.st.ref{background:var(--soft);color:var(--muted)}
+.f{display:block}.f>span{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;min-width:0}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--navy);outline-offset:-1px;border-color:var(--navy)}
+textarea{resize:vertical;min-height:70px}
+.g2,.g3{display:grid;gap:14px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}
+.span2{grid-column:span 2}
+.ipre{display:flex;align-items:stretch}.ipre .sym{display:grid;place-items:center;padding:0 10px;background:var(--soft);border:1px solid var(--line);border-right:0;border-radius:10px 0 0 10px;color:var(--muted);font-weight:600;white-space:nowrap}
+.ipre input{border-radius:0 10px 10px 0}
+.cgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,560px);gap:22px;align-items:start}
+.cform{display:grid;gap:18px}
+.cprev .card{position:sticky;top:16px}
+.rc-wrap{width:100%;position:relative;overflow:hidden;border:1px solid var(--line);border-radius:8px;background:#fff;margin-bottom:14px}
+.rc-wrap>.rc{position:absolute;left:0;top:0}
+.pa{display:grid;gap:10px}.pa .row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ihead,.irow{display:grid;grid-template-columns:1.2fr 1.6fr 72px 104px 100px 34px;gap:8px;align-items:end}
+.ihead{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.irow{padding:10px 0;border-bottom:1px dashed var(--line)}
+.irow .ml{display:none;font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px}
+.irow .tv{text-align:right;font-weight:600;padding:10px 4px}
+.sumbox{background:var(--soft);border-radius:12px;padding:14px 16px;display:grid;gap:6px}
+.sr{display:flex;justify-content:space-between}.sr.big{border-top:1px solid var(--line);margin-top:4px;padding-top:8px;font-size:16px}
+.errbox{background:rgba(179,38,30,.09);border:1px solid var(--bad);color:var(--bad);border-radius:12px;padding:12px 16px;margin-bottom:16px}.errbox ul{margin:6px 0 0;padding-left:18px}
+.empty{text-align:center;padding:56px 20px}
+.ring{width:92px;height:92px;border-radius:50%;background:var(--soft);display:grid;place-items:center;margin:0 auto 18px;color:var(--navy);outline:1px dashed var(--line);outline-offset:8px}
+.empty h2{margin:0 0 6px;font-size:18px}.empty p{margin:0 0 20px;color:var(--muted)}
+.bar2{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}.bar2 .grow{flex:1;min-width:200px}.bar2 select{width:auto;min-width:150px}
+.mo{position:fixed;inset:0;background:rgba(5,10,25,.55);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:5vh 16px;z-index:60}
+.md{background:var(--card);border-radius:16px;max-width:520px;width:100%;padding:24px;box-shadow:0 24px 60px rgba(0,0,0,.35)}.md.wide{max-width:880px}
+.md h2{margin:0 0 4px;font-size:18px}.mact{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.okc{width:64px;height:64px;border-radius:50%;background:rgba(31,122,85,.13);color:var(--ok);display:grid;place-items:center;margin:0 auto 12px}
+.ctr{text-align:center}.ctr .mact{justify-content:center}
+#toasts{position:fixed;right:16px;bottom:16px;display:grid;gap:8px;z-index:100}
+.toast{display:flex;gap:10px;align-items:center;padding:12px 16px;border-radius:12px;background:#0b1631;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.3);animation:in .25s;max-width:340px}
+.toast.err{background:var(--bad)}.toast.ok svg{color:#5fd9a3}
+@keyframes in{from{opacity:0;transform:translateY(8px)}}
+.login{min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(160deg,#0b1631,#16295a)}
+.login .card{width:100%;max-width:400px;padding:32px;text-align:center}
+.login img{width:72px;height:72px;object-fit:contain;margin-bottom:10px}
+.login h1{letter-spacing:.16em;margin-bottom:4px}.login .card>*+*{margin-top:14px}
+.logoBox{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.logoBox img{width:84px;height:84px;object-fit:contain;border:1px solid var(--line);border-radius:12px;padding:6px;background:#fff}
+/* receipt (fixed colours: always a white document) */
+.rc{width:794px;min-height:1123px;background:#fff;color:#0f1f3d;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;display:flex;flex-direction:column;transform-origin:top left;text-align:left}
+.rc .bar{height:23px;background:#0f1f3d;position:relative}.rc .bar i{position:absolute;right:0;top:0;bottom:0;width:227px;background:#2b4380}
+.rc .rb{padding:34px 60px 0;flex:1}
+.rc .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}
+.rc .lg{display:flex;align-items:center;gap:18px}.rc .lg img{max-height:76px;max-width:128px;object-fit:contain}
+.rc .cn{font-size:23px;font-weight:700}.rc .tg{font-size:11.5px;color:#6e7684;margin-top:3px}
+.rc .mt{text-align:right}.rc .tt{font-size:20px;font-weight:700;letter-spacing:.5px}
+.rc .kv{font-size:12px;color:#6e7684;margin-top:5px}.rc .kv b{color:#0f1f3d;margin-left:6px}
+.rc .bd{display:inline-block;margin-top:10px;padding:6px 18px;border-radius:4px;font-size:12.5px;font-weight:700;letter-spacing:1px}
+.rc .bd.p{background:#0f1f3d;color:#fff}.rc .bd.x{border:1.5px solid #0f1f3d;color:#0f1f3d}.rc .bd.r{background:#6e7684;color:#fff}
+.rc hr{border:0;border-top:1px solid #e5e8ee;margin:26px 0}
+.rc .cols{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-bottom:28px}
+.rc .lb{font-size:10px;color:#6e7684;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:9px}
+.rc .nm{font-size:15px;font-weight:700;margin-bottom:4px}.rc .nm .ph{color:#aab1bf;font-weight:400}
+.rc .ln{font-size:12px;color:#4a5468;margin:3px 0}
+.rc .pk{display:flex;font-size:12px;margin:5px 0}.rc .pk span{width:118px;color:#6e7684;flex:none}.rc .pk b{font-weight:600;word-break:break-word}
+.rc table{width:100%;border-collapse:collapse;table-layout:fixed}
+.rc th{background:#0f1f3d;color:#fff;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:10px 8px;text-align:left}
+.rc td{font-size:12px;padding:11px 8px;border-bottom:1px solid #e5e8ee;vertical-align:top;word-wrap:break-word}
+.rc td.b{font-weight:600}.rc td.g{color:#4a5468}.rc .r{text-align:right}
+.rc .tot{display:flex;justify-content:space-between;gap:28px;margin-top:26px}
+.rc .nt{flex:1;font-size:11.5px;color:#4a5468;white-space:pre-line}
+.rc .tb{width:318px;flex:none}
+.rc .tr{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;color:#6e7684}.rc .tr b{color:#0f1f3d;font-weight:500}
+.rc .tr.h{color:#0f1f3d;font-weight:700}.rc .tr.h b{font-weight:700}
+.rc .big{background:#0f1f3d;color:#fff;border-radius:5px;padding:14px 16px;margin:10px 0 14px;display:flex;justify-content:space-between;align-items:center}
+.rc .big span{font-size:10.5px;letter-spacing:1px;font-weight:700}.rc .big b{font-size:24px}
+.rc .ft{padding:0 60px 18px;margin-top:30px}
+.rc .ft>div:first-child{border-top:1px solid #e5e8ee;padding-top:16px}
+.rc .ty{font-size:14px;font-weight:700}.rc .fm{font-size:11px;color:#6e7684;margin-top:5px}.rc .fc{font-size:11px;color:#6e7684;margin-top:3px}
+#printArea{display:none}
+@media print{
+ *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ body>*:not(#printArea){display:none!important}
+ #printArea{display:block}#printArea .rc{transform:none!important;width:210mm;min-height:297mm}
+ @page{size:A4;margin:0}html,body{background:#fff}
+}
+@media (max-width:1200px){.cgrid{grid-template-columns:1fr}.cprev .card{position:static}}
+@media (max-width:960px){.side{transform:translateX(-100%)}.side.open{transform:none}.col{margin-left:0}.top{display:flex}.main{padding:18px 14px 60px}}
+@media (min-width:1201px) and (max-width:1699px),(max-width:700px){.ihead{display:none}.irow{grid-template-columns:1fr 1fr 1fr 34px;padding:14px 0}.irow .ml{display:block}.irow .c1,.irow .c2{grid-column:span 2}.irow .tv{padding:6px 0;text-align:left}}
+@media (max-width:700px){
+ .g2,.g3{grid-template-columns:1fr}.span2{grid-column:auto}
+ .pa .row{grid-template-columns:1fr 1fr}.card{padding:16px}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="printArea"></div>
+<div id="toasts"></div>
+<input type="file" id="impFile" accept=".json,application/json" hidden>
+<input type="file" id="logoFile" accept="image/*" hidden>
+<script>
+(function(){
+'use strict';
+const $=(s,e=document)=>e.querySelector(s),$$=(s,e=document)=>[...e.querySelectorAll(s)];
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36);
+const num=v=>{const n=parseFloat(v);return isFinite(n)?n:0};
+const r2=n=>Math.round((n+Number.EPSILON)*100)/100;
+const clone=o=>JSON.parse(JSON.stringify(o));
+const today=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const fdate=d=>d?new Date(d+'T00:00:00').toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}):'';
+const CURS=['USD','PKR','GBP','EUR','Other'],METHODS=['Bank Transfer','PayPal','Wise','JazzCash','Easypaisa','Cash','Other'],STATUSES=['PAID','PARTIALLY PAID','REFUNDED'];
+const SYM={USD:'$',PKR:'Rs ',GBP:'£',EUR:'€'};
+const symOf=r=>r.currency==='Other'?((r.currencyCode||'').trim().toUpperCase()+' '):(SYM[r.currency]||'');
+const nf=n=>num(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt=(n,r)=>symOf(r)+nf(n);
+const curKey=r=>r.currency==='Other'?((r.currencyCode||'').trim().toUpperCase()||'OTHER'):r.currency;
+const fmtK=(n,k)=>(k in SYM?SYM[k]:k+' ')+nf(n);
+
+/* icons */
+const IC={eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>',download:'<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>',copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>',trash:'<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>',plus:'<path d="M12 5v14M5 12h14"/>',menu:'<path d="M3 6h18M3 12h18M3 18h18"/>',grid:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',file:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',users:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',printer:'<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',mail:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/>',chat:'<path d="M21 11.5a8.4 8.4 0 01-12.4 7.4L3 21l2.2-5.4A8.4 8.4 0 1121 11.5z"/>',check:'<path d="M20 6L9 17l-5-5"/>',out:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/>',search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',x:'<path d="M18 6L6 18M6 6l12 12"/>',up:'<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/>'};
+const ic=(n,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`;
+
+/* ---------- data ---------- */
+let db,authed=false;
+const DEF={company:'FORMIX',tagline:'Web Development & Digital Services',email:'',phone:'',whatsapp:'',website:'',address:'',currency:'USD',prefix:'FMX',footer:'Thank you for choosing Formix.',logo:'',pass:''};
+function norm(o){o=o&&typeof o==='object'?o:{};o.receipts=Array.isArray(o.receipts)?o.receipts:[];o.clients=Array.isArray(o.clients)?o.clients:[];o.settings=Object.assign({},DEF,o.settings||{});return o}
+function load(){let o=null;try{o=JSON.parse(localStorage.getItem('formix_db'))}catch(e){}db=norm(o)}
+function save(){try{localStorage.setItem('formix_db',JSON.stringify(db))}catch(e){toast('Could not save to browser storage: '+e.message,'err')}}
+async function sha(t){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(e){return t}}
+
+/* default logo placeholder (replace in Settings) */
+let _dl=null;
+function defaultLogo(){if(_dl)return _dl;const c=document.createElement('canvas');c.width=c.height=240;const x=c.getContext('2d');x.fillStyle='#0f1f3d';x.beginPath();x.roundRect?x.roundRect(0,0,240,240,44):x.rect(0,0,240,240);x.fill();x.fillStyle='#fff';x.font='bold 150px Helvetica,Arial,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('F',120,128);x.fillStyle='#4a6bd0';x.fillRect(150,150,44,14);return _dl=c.toDataURL('image/png')}
+const getLogo=()=>db.settings.logo||defaultLogo();
+function prepImg(src){return new Promise(res=>{const im=new Image();im.onload=()=>{const w0=im.naturalWidth||300,h0=im.naturalHeight||300,k=Math.min(1,700/Math.max(w0,h0));const cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(w0*k));cv.height=Math.max(1,Math.round(h0*k));cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);res({d:cv.toDataURL('image/png'),w:cv.width,h:cv.height})};im.onerror=()=>res(null);im.src=src})}
+
+/* ---------- receipt logic ---------- */
+function calc(r){const sub=r2((r.items||[]).reduce((a,i)=>a+num(i.qty)*num(i.price),0));const disc=Math.min(r2(num(r.discount)),sub);const taxable=r2(sub-disc);const tax=r2(taxable*num(r.taxRate)/100);const total=r2(taxable+tax);const paid=r2(num(r.paid));const bal=r.status==='REFUNDED'?0:Math.max(0,r2(total-paid));return{sub,disc,tax,total,paid,bal,taxRate:num(r.taxRate)}}
+function nextNumber(){const y=new Date().getFullYear(),base=`${db.settings.prefix||'FMX'}-${y}-`;let m=0;db.receipts.forEach(r=>{if(String(r.number).startsWith(base)){const n=parseInt(String(r.number).slice(base.length),10);if(n>m)m=n}});return base+String(m+1).padStart(4,'0')}
+function newDraft(){return{id:uid(),number:nextNumber(),date:today(),status:'PAID',autoStatus:true,paidTouched:false,clientId:'',client:{name:'',email:'',phone:'',company:'',address:''},items:[{name:'',desc:'',qty:'1',price:''}],discount:'',taxRate:'',method:'Bank Transfer',txn:'',payDate:today(),paid:'',currency:db.settings.currency||'USD',currencyCode:'',notes:''}}
+const usedRow=i=>(i.name||'').trim()||(i.desc||'').trim()||num(i.price)!==0;
+function validate(r){const e=[],c=r.client||{};
+ if(!(c.name||'').trim())e.push('Client name is required.');
+ const rows=(r.items||[]).map((i,k)=>[i,k+1]).filter(([i])=>usedRow(i));
+ if(!rows.some(([i])=>(i.name||'').trim()))e.push('Add at least one service with a name.');
+ rows.forEach(([i,n])=>{if(!(i.name||'').trim())e.push(`Service row ${n}: please enter a service name.`);
+  if(i.qty===''||isNaN(parseFloat(i.qty)))e.push(`Service row ${n}: enter a valid quantity.`);else if(parseFloat(i.qty)<0)e.push(`Service row ${n}: quantity cannot be negative.`);
+  if(i.price!==''&&isNaN(parseFloat(i.price)))e.push(`Service row ${n}: enter a valid price.`);else if(parseFloat(i.price)<0)e.push(`Service row ${n}: price cannot be negative.`)});
+ const c1=calc({...r,items:rows.map(x=>x[0])});
+ if(r.discount!==''&&(isNaN(parseFloat(r.discount))||parseFloat(r.discount)<0))e.push('Discount must be a valid, non-negative amount.');
+ else if(num(r.discount)>c1.sub+.005)e.push('Discount cannot be more than the subtotal.');
+ if(r.taxRate!==''&&(isNaN(parseFloat(r.taxRate))||parseFloat(r.taxRate)<0))e.push('Tax must be a valid, non-negative percentage.');
+ if(r.paid===''||isNaN(parseFloat(r.paid))||parseFloat(r.paid)<0)e.push('Amount paid must be a valid amount (0 or more).');
+ else if(r.status!=='REFUNDED'&&num(r.paid)>c1.total+.005)e.push('Amount paid cannot be more than the total amount.');
+ if(!r.date)e.push('Receipt date is required.');
+ if(!r.payDate)e.push('Payment date is required.');
+ if(!(r.number||'').trim())e.push('Receipt number is required.');
+ else if(db.receipts.some(x=>x.number.toLowerCase()===r.number.trim().toLowerCase()&&x.id!==r.id))e.push(`Receipt number ${r.number} already exists — choose a unique number.`);
+ if(r.currency==='Other'&&!(r.currencyCode||'').trim())e.push('Enter a currency code/symbol for "Other".');
+ return e}
+
+/* ---------- receipt HTML (preview / print) ---------- */
+function receiptHTML(r){const s=db.settings,c=calc(r),f=n=>fmt(n,r),cl=r.client||{};
+ const st=r.status||'PAID',cls=st==='PAID'?'p':st==='REFUNDED'?'r':'x';
+ const rows=(r.items||[]).filter(usedRow).map(i=>{const q=num(i.qty),p=num(i.price);return `<tr><td class="b">${esc(i.name)}</td><td class="g">${esc(i.desc)}</td><td class="r">${q}</td><td class="r">${f(p)}</td><td class="r b">${f(q*p)}</td></tr>`}).join('')||`<tr><td colspan="5" class="g" style="text-align:center;padding:26px">Services will appear here</td></tr>`;
+ const ln=v=>v?`<div class="ln">${esc(v)}</div>`:'';
+ const pk=(a,b)=>`<div class="pk"><span>${a}</span><b>${esc(b)}</b></div>`;
+ const contact=[s.email,s.phone,s.website].filter(Boolean).join('   •   ');
+ return `<div class="rc"><div class="bar"><i></i></div><div class="rb">
+ <div class="hd"><div class="lg"><img src="${getLogo()}" alt=""><div><div class="cn">${esc(s.company)}</div><div class="tg">${esc(s.tagline)}</div></div></div>
+ <div class="mt"><div class="tt">PAYMENT RECEIPT</div><div class="kv">Receipt No.<b>${esc(r.number)}</b></div><div class="kv">Date<b>${esc(fdate(r.date))}</b></div><div class="bd ${cls}">${esc(st)}</div></div></div>
+ <hr><div class="cols"><div><div class="lb">Received from</div><div class="nm">${cl.name?esc(cl.name):'<span class="ph">Client name</span>'}</div>${ln(cl.company)}${ln(cl.email)}${ln(cl.phone)}${cl.address?`<div class="ln" style="white-space:pre-line">${esc(cl.address)}</div>`:''}</div>
+ <div><div class="lb">Payment details</div>${pk('Method',r.method)}${r.txn?pk('Transaction ID',r.txn):''}${pk('Payment date',fdate(r.payDate))}</div></div>
+ <table><colgroup><col style="width:27%"><col style="width:35%"><col style="width:8%"><col style="width:15%"><col style="width:15%"></colgroup><thead><tr><th>Service / Work</th><th>Description</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead><tbody>${rows}</tbody></table>
+ <div class="tot"><div class="nt">${r.notes?`<div class="lb">Notes</div>${esc(r.notes)}`:''}</div><div class="tb">
+ <div class="tr">Subtotal<b>${f(c.sub)}</b></div><div class="tr">Discount<b>${c.disc?'- '+f(c.disc):f(0)}</b></div><div class="tr">Tax${c.taxRate?` (${c.taxRate}%)`:''}<b>${f(c.tax)}</b></div>
+ <div class="big"><span>TOTAL AMOUNT</span><b>${f(c.total)}</b></div>
+ <div class="tr h">${st==='REFUNDED'?'Amount Refunded':'Amount Paid'}<b>${f(c.paid)}</b></div><div class="tr h">Balance Due<b>${f(c.bal)}</b></div></div></div></div>
+ <div class="ft"><div><div class="ty">${esc(s.footer)}</div><div class="fm">${esc(s.company)} — ${esc(s.tagline)}</div>${contact?`<div class="fc">${esc(contact)}</div>`:''}</div></div>
+ <div class="bar"><i></i></div></div>`}
+function fit(){$$('.rc-wrap').forEach(w=>{const rc=w.firstElementChild;if(!rc)return;const k=w.clientWidth/794;rc.style.transform=`scale(${k})`;w.style.height=(rc.offsetHeight*k)+'px'})}
+window.addEventListener('resize',fit);
+
+/* ---------- PDF ---------- */
+async function buildPDF(r){
+ if(!window.jspdf||!window.jspdf.jsPDF)throw new Error('PDF library not loaded (check internet connection)');
+ const s=db.settings,c=calc(r),{jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'a4',compress:true});
+ const N=[15,31,61],N2=[43,67,128],G=[110,118,132],L=[229,232,238],M=16,R=194,f=n=>fmt(n,r),st=r.status||'PAID',cl=r.client||{};
+ const T=(t,x,y,o)=>doc.text(String(t),x,y,o),col=a=>doc.setTextColor(a[0],a[1],a[2]);
+ const font=(w,z)=>{doc.setFont('helvetica',w);doc.setFontSize(z)};
+ const lg=await prepImg(getLogo());let x0=M;
+ if(lg){const k=Math.min(34/lg.w,20/lg.h),w=lg.w*k,h=lg.h*k;doc.addImage(lg.d,'PNG',M,14+(20-h)/2,w,h);x0=M+w+5}
+ font('bold',17);col(N);T(s.company,x0,22.5);font('normal',8.5);col(G);T(s.tagline,x0,28);
+ font('bold',15);col(N);T('PAYMENT RECEIPT',R,20,{align:'right'});
+ const kv=(a,b,y)=>{font('bold',9);col(N);T(b,R,y,{align:'right'});const w=doc.getTextWidth(b);font('normal',9);col(G);T(a,R-w-2.5,y,{align:'right'})};
+ kv('Receipt No.',r.number,27);kv('Date',fdate(r.date),32.5);
+ font('bold',9);const bw=doc.getTextWidth(st)+11;
+ if(st==='PAID'){doc.setFillColor(...N);doc.roundedRect(R-bw,36,bw,7.5,1.2,1.2,'F');doc.setTextColor(255)}
+ else if(st==='REFUNDED'){doc.setFillColor(...G);doc.roundedRect(R-bw,36,bw,7.5,1.2,1.2,'F');doc.setTextColor(255)}
+ else{doc.setDrawColor(...N);doc.setLineWidth(.5);doc.roundedRect(R-bw,36,bw,7.5,1.2,1.2,'S');col(N)}
+ T(st,R-bw/2,41.2,{align:'center'});
+ doc.setDrawColor(...L);doc.setLineWidth(.3);doc.line(M,50,R,50);
+ let y1=58;font('bold',7.5);col(G);T('RECEIVED FROM',M,y1);y1+=6.5;font('bold',11.5);col(N);T(cl.name||'',M,y1,{maxWidth:88});y1+=5.5;font('normal',9);col([74,84,104]);
+ [cl.company,cl.email,cl.phone].forEach(v=>{if(v){T(v,M,y1,{maxWidth:88});y1+=4.8}});
+ if(cl.address){doc.splitTextToSize(cl.address,84).forEach(l=>{T(l,M,y1);y1+=4.8})}
+ let y2=58;font('bold',7.5);col(G);T('PAYMENT DETAILS',112,y2);y2+=6.5;
+ const pk=(a,b)=>{font('normal',9);col(G);T(a,112,y2);font('bold',9);col(N);const ls=doc.splitTextToSize(String(b),52);ls.forEach((l,k)=>T(l,142,y2+k*4.6));y2+=Math.max(5.6,ls.length*4.6+1)};
+ pk('Method',r.method);if(r.txn)pk('Transaction ID',r.txn);pk('Payment date',fdate(r.payDate));
+ const body=(r.items||[]).filter(usedRow).map(i=>[i.name||'',i.desc||'',String(num(i.qty)),f(num(i.price)),f(num(i.qty)*num(i.price))]);
+ doc.autoTable({startY:Math.max(y1,y2)+6,head:[['SERVICE / WORK','DESCRIPTION','QTY','RATE','AMOUNT']],body,theme:'plain',margin:{left:M,right:210-R,top:20,bottom:24},
+  styles:{font:'helvetica',fontSize:9,textColor:N,cellPadding:{top:3.4,bottom:3.4,left:2.2,right:2.2},overflow:'linebreak'},
+  headStyles:{fillColor:N,textColor:255,fontStyle:'bold',fontSize:7.5},
+  columnStyles:{0:{cellWidth:48,fontStyle:'bold'},1:{cellWidth:64,textColor:[74,84,104]},2:{cellWidth:14,halign:'right'},3:{cellWidth:26,halign:'right'},4:{cellWidth:26,halign:'right',fontStyle:'bold'}},
+  didParseCell:d=>{if(d.section==='head'&&d.column.index>1)d.cell.styles.halign='right'},
+  didDrawCell:d=>{if(d.section==='body'){doc.setDrawColor(...L);doc.setLineWidth(.25);doc.line(d.cell.x,d.cell.y+d.cell.height,d.cell.x+d.cell.width,d.cell.y+d.cell.height)}}});
+ let y=doc.lastAutoTable.finalY+9;
+ if(y+64>246){doc.addPage();y=22}
+ const y0=y;
+ const row=(a,b,yy,bold)=>{font(bold?'bold':'normal',9.5);col(bold?N:G);T(a,112,yy);font(bold?'bold':'normal',9.5);col(N);T(b,R,yy,{align:'right'})};
+ row('Subtotal',f(c.sub),y);y+=6.5;row('Discount',c.disc?'- '+f(c.disc):f(0),y);y+=6.5;row('Tax'+(c.taxRate?` (${c.taxRate}%)`:''),f(c.tax),y);y+=4.5;
+ doc.setFillColor(...N);doc.roundedRect(112,y,82,16,1.5,1.5,'F');doc.setTextColor(255);font('bold',8);T('TOTAL AMOUNT',116,y+9.6);font('bold',15);T(f(c.total),190,y+10.4,{align:'right'});
+ y+=24;row(st==='REFUNDED'?'Amount Refunded':'Amount Paid',f(c.paid),y,true);y+=7;row('Balance Due',f(c.bal),y,true);
+ if(r.notes){font('bold',7.5);col(G);T('NOTES',M,y0);font('normal',9);col([74,84,104]);doc.splitTextToSize(r.notes,86).slice(0,12).forEach((l,k)=>T(l,M,y0+6+k*4.7))}
+ const n=doc.getNumberOfPages(),contact=[s.email,s.phone,s.website].filter(Boolean).join('   •   ');
+ for(let p=1;p<=n;p++){doc.setPage(p);
+  doc.setFillColor(...N);doc.rect(0,0,210,6,'F');doc.setFillColor(...N2);doc.rect(150,0,60,6,'F');
+  doc.rect(0,291,210,6,'F');doc.setFillColor(...N);doc.rect(0,291,150,6,'F');doc.setFillColor(...N2);doc.rect(150,291,60,6,'F');
+  if(p===n){doc.setDrawColor(...L);doc.setLineWidth(.3);doc.line(M,254,R,254);font('bold',10.5);col(N);T(s.footer,M,261);font('normal',8.5);col(G);T(`${s.company} — ${s.tagline}`,M,266.5);if(contact)T(contact,M,271.5)}
+  font('normal',7.5);col(G);T(`${s.company}  |  ${r.number}`,M,286.5);T(`Page ${p} of ${n}`,R,286.5,{align:'right'})}
+ return doc}
+async function saveFile(name,data,type){
+ try{const d=window.claude&&await window.claude.use('downloads');if(d){await d.save({filename:name,data});return true}}catch(e){if(e&&e.code==='declined')return false}
+ try{const b=new Blob([data],{type:type||'application/octet-stream'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);return true}catch(e){toast('Download failed: '+e.message,'err');return false}}
+async function downloadPDF(r){try{toast('Generating PDF…');const doc=await buildPDF(r);const ok=await saveFile(`${r.number}.pdf`,doc.output('arraybuffer'),'application/pdf');if(ok)toast('PDF ready: '+r.number+'.pdf')}catch(e){toast('PDF failed: '+e.message,'err')}}
+function printR(r){$('#printArea').innerHTML=receiptHTML(r);try{setTimeout(()=>window.print(),80)}catch(e){toast('Printing is blocked here — download the PDF and print it.','err')}}
+function openLink(u,blank){const a=document.createElement('a');a.href=u;if(blank){a.target='_blank';a.rel='noopener'}document.body.appendChild(a);a.click();a.remove()}
+function msgBody(r,wa){const s=db.settings,c=calc(r);return wa?`Hello ${r.client.name},\n\nThank you for your payment to ${s.company}.\n\nYour payment receipt is:\n\nReceipt #: ${r.number}\nAmount Paid: ${fmt(c.paid,r)}\nPayment Date: ${fdate(r.payDate)}\n\nThank you for choosing ${s.company}.\n\n${s.tagline}`:`Hello ${r.client.name},\n\nThank you for your payment.\n\nPlease find your official payment receipt from ${s.company}.\n\nReceipt Number: ${r.number}\nAmount Paid: ${fmt(c.paid,r)}\nPayment Date: ${fdate(r.payDate)}\n\nThank you for choosing ${s.company}.\n\n${s.tagline}`}
+function waR(r){if(!(r.client.name||'').trim())return toast('Enter the client name first.','err');const p=(r.client.phone||'').replace(/[^\d]/g,'');openLink(`https://wa.me/${p}?text=${encodeURIComponent(msgBody(r,true))}`,true);toast('WhatsApp opened — download the PDF to attach it.')}
+function mailR(r){if(!(r.client.name||'').trim())return toast('Enter the client name first.','err');openLink(`mailto:${encodeURIComponent(r.client.email||'')}?subject=${encodeURIComponent(`Payment Receipt — ${db.settings.company} — ${r.number}`)}&body=${encodeURIComponent(msgBody(r,false))}`);toast('Email draft opened — download the PDF to attach it.')}
+
+/* ---------- UI helpers ---------- */
+const ui={view:'dashboard',draft:null,editing:null,h:{q:'',status:'',method:'',sort:'new'},cq:''};
+function toast(m,t){const e=document.createElement('div');e.className='toast '+(t||'ok');e.innerHTML=ic(t==='err'?'x':'check',16)+'<span>'+esc(m)+'</span>';$('#toasts').appendChild(e);setTimeout(()=>e.remove(),4200)}
+let modalCb=null;
+function openModal(html,cls,onclose){closeModal(true);const m=document.createElement('div');m.className='mo';m.id='mo';m.innerHTML=`<div class="md ${cls||''}" role="dialog" aria-modal="true">${html}</div>`;m.addEventListener('mousedown',e=>{if(e.target===m)closeModal()});document.body.appendChild(m);modalCb=onclose||null;fit();const i=$('input,textarea',m);if(i&&!cls)i.focus()}
+function closeModal(silent){const m=$('#mo');if(m)m.remove();const cb=modalCb;modalCb=null;if(cb&&!silent)cb()}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+function confirmBox(title,msg,ok,cb){openModal(`<h2>${esc(title)}</h2><p class="sub">${esc(msg)}</p><div class="mact"><button class="btn danger" data-act="okc">${esc(ok)}</button><button class="btn" data-act="close">Cancel</button></div>`);$('[data-act=okc]').onclick=()=>{closeModal(true);cb()}}
+const stb=st=>`<span class="st ${st==='PAID'?'paid':st==='REFUNDED'?'ref':'part'}">${esc(st)}</span>`;
+const fld=(l,inner,c)=>`<label class="f ${c||''}"><span>${l}</span>${inner}</label>`;
+const inp=(k,v,o)=>`<input data-k="${k}" value="${esc(v)}" ${o||''}>`;
+const opts=(a,v)=>a.map(x=>`<option${x===v?' selected':''}>${esc(x)}</option>`).join('');
+const svc=r=>{const n=(r.items||[]).map(i=>i.name).filter(Boolean);return n.length?esc(n[0])+(n.length>1?` <span class="mut">+${n.length-1} more</span>`:''):'—'};
+const sumMap=(list,fn)=>{const m={};list.forEach(r=>{const k=curKey(r);m[k]=(m[k]||0)+fn(r)});return m};
+function moneyLines(m){const d=db.settings.currency,ks=Object.keys(m).sort((a,b)=>(a===d?-1:b===d?1:a.localeCompare(b)));return ks.length?ks.map(k=>fmtK(m[k],k)):[fmtK(0,d)]}
+const acts=id=>`<div class="ra">${[['view','eye','View'],['edit','edit','Edit'],['pdf','download','Download PDF'],['dup','copy','Duplicate'],['del','trash','Delete']].map(([a,i,t])=>`<button class="icon-btn${a==='del'?' danger':''}" data-act="${a}" data-id="${id}" title="${t}" aria-label="${t}">${ic(i,16)}</button>`).join('')}</div>`;
+const emptyState=()=>`<div class="card empty"><div class="ring">${ic('file',40)}</div><h2>No receipts yet</h2><p>Create your first payment receipt to get started.</p><button class="btn primary" data-act="nav" data-v="create">${ic('plus')} CREATE RECEIPT</button></div>`;
+
+/* ---------- shell ---------- */
+const NAV=[['dashboard','Dashboard','grid'],['create','Create Receipt','file'],['history','Receipt History','clock'],['clients','Clients','users'],['settings','Settings','gear']];
+function shell(){const s=db.settings;$('#root').innerHTML=`<div class="app"><aside class="side" id="side"><div class="brand"><img src="${getLogo()}" alt=""><div><b>${esc(s.company)}</b><small>Receipt Generator</small></div></div><nav id="nav"></nav><div class="foot"><button class="nb" data-act="logout">${ic('out')} Sign out</button></div></aside><div class="ov" id="ov" data-act="menu"></div><div class="col"><div class="top"><button class="icon-btn" data-act="menu" aria-label="Menu">${ic('menu',20)}</button><img src="${getLogo()}" alt=""><b>${esc(s.company)}</b></div><main class="main" id="view"></main></div></div>`;go(ui.view)}
+function go(v){ui.view=v;$('#side').classList.remove('open');$('#ov').classList.remove('show');$('#nav').innerHTML=NAV.map(([k,l,i])=>`<button class="nb${k===v?' on':''}" data-act="nav" data-v="${k}">${ic(i)} ${l}</button>`).join('');({dashboard:vDash,create:vCreate,history:vHist,clients:vClients,settings:vSettings})[v]();window.scrollTo(0,0);fit()}
+
+/* ---------- dashboard ---------- */
+function vDash(){const R=db.receipts,t=today(),m=t.slice(0,7),ok=R.filter(r=>r.status!=='REFUNDED'),pd=r=>calc(r).paid;
+ const stat=(l,map)=>{const ls=moneyLines(map);return `<div class="card stat"><div class="l">${l}</div><div class="v">${ls[0]}</div>${ls.slice(1).map(x=>`<div class="s">${x}</div>`).join('')}</div>`};
+ const recent=R.slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,8);
+ $('#view').innerHTML=`<div class="ph"><div><h1>DASHBOARD</h1><p class="sub">Welcome back — here is your payment overview.</p></div><button class="btn primary" data-act="nav" data-v="create">${ic('plus')} Create Receipt</button></div>
+ <div class="stats">${stat('Total Received',sumMap(ok,pd))}<div class="card stat"><div class="l">Total Receipts</div><div class="v">${R.length}</div></div>${stat('This Month',sumMap(ok.filter(r=>(r.payDate||'').startsWith(m)),pd))}${stat("Today's Payments",sumMap(ok.filter(r=>r.payDate===t),pd))}</div>
+ ${R.length?`<div class="card"><h3>Recent Receipts</h3><div class="tw"><table class="t"><thead><tr><th>Receipt #</th><th>Client</th><th>Service</th><th>Amount</th><th>Date</th><th>Method</th><th>Status</th><th class="r">Actions</th></tr></thead><tbody>${recent.map(r=>`<tr><td><b>${esc(r.number)}</b></td><td>${esc(r.client.name)}</td><td>${svc(r)}</td><td>${fmt(calc(r).paid,r)}</td><td>${esc(fdate(r.payDate))}</td><td>${esc(r.method)}</td><td>${stb(r.status)}</td><td>${acts(r.id)}</td></tr>`).join('')}</tbody></table></div></div>`:emptyState()}`}
+
+/* ---------- create ---------- */
+function vCreate(){if(!ui.draft)ui.draft=newDraft();const r=ui.draft;
+ $('#view').innerHTML=`<div class="ph"><div><h1>${ui.editing?'EDIT PAYMENT RECEIPT':'CREATE PAYMENT RECEIPT'}</h1><p class="sub">Fill in the details — the receipt updates live.</p></div><button class="btn" data-act="reset">${ui.editing?'Cancel editing':'Reset form'}</button></div><div id="errs"></div>
+ <div class="cgrid"><div class="cform" id="cform">
+ <section class="card"><h3><b>1</b> Receipt details</h3><div class="g3">${fld('Receipt number',inp('number',r.number))}${fld('Receipt date',inp('date',r.date,'type="date"'))}${fld('Payment status',`<select data-k="status">${opts(STATUSES,r.status)}</select>`)}</div></section>
+ <section class="card"><h3><b>2</b> Client details</h3><div class="g2">${fld('Saved client',`<select id="clientSel"><option value="">— Select a saved client or type below —</option>${db.clients.map(c=>`<option value="${c.id}"${c.id===r.clientId?' selected':''}>${esc(c.name)}${c.company?' — '+esc(c.company):''}</option>`).join('')}</select>`,'span2')}
+ ${fld('Client name *',inp('client.name',r.client.name,'placeholder="Full name"'))}${fld('Client company',inp('client.company',r.client.company))}${fld('Client email',inp('client.email',r.client.email,'type="email"'))}${fld('Client phone / WhatsApp',inp('client.phone',r.client.phone,'placeholder="+92 300 1234567"'))}${fld('Client address',`<textarea data-k="client.address" rows="2">${esc(r.client.address)}</textarea>`,'span2')}</div></section>
+ <section class="card"><h3><b>3</b> Services / work</h3><div class="ihead"><span>Service / Work</span><span>Description</span><span>Qty</span><span>Unit price</span><span style="text-align:right">Total</span><span></span></div><div id="items"></div><div style="margin-top:14px"><button class="btn" data-act="additem">${ic('plus')} ADD SERVICE</button></div></section>
+ <section class="card"><h3><b>4</b> Payment information</h3><div class="g2">${fld('Payment method',`<select data-k="method">${opts(METHODS,r.method)}</select>`)}${fld('Transaction ID / reference (optional)',inp('txn',r.txn))}${fld('Payment date',inp('payDate',r.payDate,'type="date"'))}
+ ${fld('Currency',`<div style="display:grid;grid-template-columns:1fr auto;gap:8px"><select data-k="currency">${opts(CURS,r.currency)}</select><input data-k="currencyCode" id="codeIn" value="${esc(r.currencyCode)}" placeholder="Code" style="width:90px;display:${r.currency==='Other'?'block':'none'}"></div>`)}
+ ${fld('Discount',`<div class="ipre"><span class="sym"></span>${inp('discount',r.discount,'type="number" min="0" step="any" inputmode="decimal" placeholder="0"')}</div>`)}${fld('Tax (%, optional)',inp('taxRate',r.taxRate,'type="number" min="0" step="any" inputmode="decimal" placeholder="0"'))}
+ ${fld('Amount paid',`<div class="ipre"><span class="sym"></span>${inp('paid',r.paid,'type="number" min="0" step="any" inputmode="decimal"')}</div>`,'span2')}${fld('Notes (optional, shown on receipt)',`<textarea data-k="notes" rows="2">${esc(r.notes)}</textarea>`,'span2')}</div>
+ <div class="sumbox" id="sum" style="margin-top:16px"></div></section>
+ <button class="btn primary lg" data-act="gen">${ic('check')} ${ui.editing?'SAVE CHANGES':'GENERATE RECEIPT'}</button></div>
+ <div class="cprev"><div class="card"><h3>Live receipt preview</h3><div class="rc-wrap" id="pv"></div><div class="pa"><button class="btn primary lg" data-act="pdf">${ic('download')} DOWNLOAD PDF</button><div class="row"><button class="btn" data-act="print">${ic('printer',16)} PRINT RECEIPT</button><button class="btn" data-act="wa">${ic('chat',16)} SEND VIA WHATSAPP</button><button class="btn" data-act="mail">${ic('mail',16)} SEND VIA EMAIL</button></div></div></div></div></div>`;
+ renderItems();updateAll()}
+function renderItems(){const r=ui.draft;$('#items').innerHTML=r.items.map((i,n)=>`<div class="irow"><label class="c1"><span class="ml">Service / Work</span>${inp(`items.${n}.name`,i.name,'placeholder="e.g. Website Development"')}</label><label class="c2"><span class="ml">Description</span>${inp(`items.${n}.desc`,i.desc,'placeholder="Short description"')}</label><label><span class="ml">Qty</span>${inp(`items.${n}.qty`,i.qty,'type="number" min="0" step="any" inputmode="decimal"')}</label><label><span class="ml">Unit price</span>${inp(`items.${n}.price`,i.price,'type="number" min="0" step="any" inputmode="decimal" placeholder="0.00"')}</label><div><span class="ml">Total</span><div class="tv" data-it="${n}"></div></div><button class="icon-btn danger" data-act="rmitem" data-i="${n}" title="Remove" aria-label="Remove service">${ic('trash',16)}</button></div>`).join('')}
+function updateAll(){const r=ui.draft;if(!r||!$('#sum'))return;let c=calc(r);
+ if(!r.paidTouched){r.paid=String(c.total);const p=$('[data-k=paid]');if(p&&document.activeElement!==p)p.value=r.paid;c=calc(r)}
+ if(r.autoStatus&&r.status!=='REFUNDED'){r.status=c.paid+.005>=c.total?'PAID':'PARTIALLY PAID';const sel=$('[data-k=status]');if(sel)sel.value=r.status;c=calc(r)}
+ const f=n=>fmt(n,r);$$('.sym').forEach(e=>e.textContent=symOf(r).trim()||'—');$('#codeIn').style.display=r.currency==='Other'?'block':'none';
+ $$('[data-it]').forEach(e=>{const i=r.items[+e.dataset.it];e.textContent=f(num(i.qty)*num(i.price))});
+ $('#sum').innerHTML=`<div class="sr"><span>Subtotal</span><b>${f(c.sub)}</b></div><div class="sr"><span>Discount</span><b>- ${f(c.disc)}</b></div><div class="sr"><span>Tax${c.taxRate?` (${c.taxRate}%)`:''}</span><b>${f(c.tax)}</b></div><div class="sr big"><span><b>Total amount</b></span><b>${f(c.total)}</b></div><div class="sr"><span>Amount paid</span><b>${f(c.paid)}</b></div><div class="sr"><span>Remaining balance</span><b>${f(c.bal)}</b></div><div class="sr"><span>Status</span>${stb(r.status)}</div>`;
+ $('#pv').innerHTML=receiptHTML(r);fit()}
+function setPath(o,p,v){const a=p.split('.');while(a.length>1)o=o[a.shift()];o[a[0]]=v}
+function onInput(e){const t=e.target,r=ui.draft;
+ if(t.id==='clientSel'){if(!r)return;const c=db.clients.find(x=>x.id===t.value);r.clientId=c?c.id:'';if(c){r.client={name:c.name||'',email:c.email||'',phone:c.phone||'',company:c.company||'',address:c.address||''};Object.entries(r.client).forEach(([k,v])=>{const el=$(`[data-k="client.${k}"]`);if(el)el.value=v})}updateAll();return}
+ if(t.dataset.k&&r&&$('#cform')){const k=t.dataset.k;setPath(r,k,t.value);
+  if(k==='paid'){r.paidTouched=t.value!=='';r.autoStatus=true}
+  else if(/^items\.\d+\.(qty|price)$/.test(k)||k==='discount'||k==='taxRate')r.autoStatus=true;
+  else if(k==='status')r.autoStatus=false;
+  else if(k==='client.name'&&r.clientId){const c=db.clients.find(x=>x.id===r.clientId);if(c&&c.name!==t.value)r.clientId=''}
+  updateAll();return}
+ if(t.dataset.q==='h'){ui.h.q=t.value;renderHist()}else if(t.dataset.q==='c'){ui.cq=t.value;renderClientList()}}
+document.addEventListener('input',onInput);document.addEventListener('change',onInput);
+function showErrs(l){const b=$('#errs');if(!b)return;b.innerHTML=l.length?`<div class="errbox"><b>Please fix the following:</b><ul>${l.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:'';if(l.length)b.scrollIntoView({behavior:'smooth',block:'center'})}
+function saveReceipt(){const r=ui.draft,errs=validate(r);showErrs(errs);if(errs.length)return;
+ r.items=r.items.filter(usedRow);r.number=r.number.trim();r.currencyCode=r.currency==='Other'?r.currencyCode.trim().toUpperCase():'';
+ const c=r.client;let cl=r.clientId&&db.clients.find(x=>x.id===r.clientId);
+ if(!cl)cl=db.clients.find(x=>x.name.toLowerCase()===c.name.trim().toLowerCase()&&(x.email||'').toLowerCase()===(c.email||'').trim().toLowerCase());
+ if(!cl){cl={id:uid(),createdAt:Date.now()};db.clients.push(cl)}
+ Object.assign(cl,{name:c.name.trim(),company:c.company.trim(),email:c.email.trim(),phone:c.phone.trim(),address:c.address.trim()});r.clientId=cl.id;
+ delete r.paidTouched;delete r.autoStatus;const i=db.receipts.findIndex(x=>x.id===r.id);
+ if(i>-1){r.createdAt=db.receipts[i].createdAt;db.receipts[i]=r}else{r.createdAt=Date.now();db.receipts.push(r)}
+ save();const wasEdit=!!ui.editing;ui.draft=null;ui.editing=null;go('history');
+ openModal(`<div class="ctr"><div class="okc">${ic('check',32)}</div><h2>✓ Receipt ${wasEdit?'Updated':'Generated'} Successfully</h2><p class="sub">Receipt:</p><p style="font-size:20px;font-weight:700;margin:2px 0 0">${esc(r.number)}</p><div class="mact"><button class="btn primary" data-act="view" data-id="${r.id}">VIEW RECEIPT</button><button class="btn" data-act="pdf" data-id="${r.id}">DOWNLOAD PDF</button><button class="btn" data-act="wa" data-id="${r.id}">SEND VIA WHATSAPP</button><button class="btn" data-act="print" data-id="${r.id}">PRINT</button></div></div>`)}
+function openView(id){const r=db.receipts.find(x=>x.id===id);if(!r)return;openModal(`<div class="rc-wrap">${receiptHTML(r)}</div><div class="mact"><button class="btn primary" data-act="pdf" data-id="${id}">${ic('download',16)} DOWNLOAD PDF</button><button class="btn" data-act="print" data-id="${id}">${ic('printer',16)} PRINT RECEIPT</button><button class="btn" data-act="wa" data-id="${id}">${ic('chat',16)} WHATSAPP</button><button class="btn" data-act="mail" data-id="${id}">${ic('mail',16)} EMAIL</button><button class="btn" data-act="edit" data-id="${id}">${ic('edit',16)} Edit</button><button class="btn" data-act="close">Close</button></div>`,'wide')}
+
+/* ---------- history ---------- */
+function vHist(){const h=ui.h;$('#view').innerHTML=`<div class="ph"><div><h1>RECEIPT HISTORY</h1><p class="sub">Search, filter and manage every receipt.</p></div><button class="btn primary" data-act="nav" data-v="create">${ic('plus')} Create Receipt</button></div>
+ <div class="card"><div class="bar2"><input class="grow" data-q="h" value="${esc(h.q)}" placeholder="Search client, receipt #, service, transaction ID…"><select id="hs"><option value="">All statuses</option>${STATUSES.map(x=>`<option${h.status===x?' selected':''}>${x}</option>`).join('')}</select><select id="hm"><option value="">All methods</option>${METHODS.map(x=>`<option${h.method===x?' selected':''}>${x}</option>`).join('')}</select><select id="ho">${[['new','Newest first'],['old','Oldest first'],['hi','Amount: high → low'],['lo','Amount: low → high'],['num','Receipt number']].map(([k,l])=>`<option value="${k}"${h.sort===k?' selected':''}>${l}</option>`).join('')}</select></div><div id="hlist"></div></div>`;
+ $('#hs').onchange=e=>{h.status=e.target.value;renderHist()};$('#hm').onchange=e=>{h.method=e.target.value;renderHist()};$('#ho').onchange=e=>{h.sort=e.target.value;renderHist()};renderHist()}
+function renderHist(){const h=ui.h,q=h.q.trim().toLowerCase();if(!db.receipts.length){$('#hlist').innerHTML=emptyState();return}
+ let L=db.receipts.filter(r=>(!q||[r.number,r.client.name,r.client.company,r.txn,...(r.items||[]).map(i=>i.name+' '+i.desc)].join(' ').toLowerCase().includes(q))&&(!h.status||r.status===h.status)&&(!h.method||r.method===h.method));
+ const S={new:(a,b)=>(b.payDate||'').localeCompare(a.payDate||'')||b.createdAt-a.createdAt,old:(a,b)=>(a.payDate||'').localeCompare(b.payDate||'')||a.createdAt-b.createdAt,hi:(a,b)=>calc(b).paid-calc(a).paid,lo:(a,b)=>calc(a).paid-calc(b).paid,num:(a,b)=>a.number.localeCompare(b.number)};L.sort(S[h.sort]);
+ $('#hlist').innerHTML=L.length?`<div class="tw"><table class="t" style="min-width:900px"><thead><tr><th>Receipt #</th><th>Client</th><th>Services</th><th>Amount</th><th>Currency</th><th>Payment date</th><th>Status</th><th class="r">Actions</th></tr></thead><tbody>${L.map(r=>{const c=calc(r);return `<tr><td><b>${esc(r.number)}</b></td><td>${esc(r.client.name)}${r.client.company?`<div class="mut">${esc(r.client.company)}</div>`:''}</td><td>${svc(r)}</td><td>${fmt(c.paid,r)}${c.bal>0?`<div class="mut">of ${fmt(c.total,r)}</div>`:''}</td><td>${esc(curKey(r))}</td><td>${esc(fdate(r.payDate))}</td><td>${stb(r.status)}</td><td>${acts(r.id)}</td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty"><div class="ring">${ic('search',36)}</div><h2>No matching receipts</h2><p>Try a different search or filter.</p></div>`}
+
+/* ---------- clients ---------- */
+function cstats(c){const L=db.receipts.filter(r=>r.clientId===c.id);const ok=L.filter(r=>r.status!=='REFUNDED');return{L,paid:moneyLines(sumMap(ok,r=>calc(r).paid)).join(' + '),n:L.length,last:L.reduce((m,r)=>(r.payDate||'')>m?r.payDate:m,'')}}
+function vClients(){$('#view').innerHTML=`<div class="ph"><div><h1>CLIENTS</h1><p class="sub">Your client database — pick them when creating a receipt.</p></div><button class="btn primary" data-act="cadd">${ic('plus')} Add Client</button></div><div class="card"><div class="bar2"><input class="grow" data-q="c" value="${esc(ui.cq)}" placeholder="Search clients…"></div><div id="clist"></div></div>`;renderClientList()}
+function renderClientList(){const q=ui.cq.trim().toLowerCase();const L=db.clients.filter(c=>!q||[c.name,c.company,c.email,c.phone].join(' ').toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name));
+ $('#clist').innerHTML=!db.clients.length?`<div class="empty"><div class="ring">${ic('users',40)}</div><h2>No clients yet</h2><p>Clients are saved automatically when you generate a receipt, or add one manually.</p><button class="btn primary" data-act="cadd">${ic('plus')} Add Client</button></div>`:L.length?`<div class="tw"><table class="t" style="min-width:900px"><thead><tr><th>Client</th><th>Company</th><th>Email</th><th>Phone</th><th>Total paid</th><th>Receipts</th><th>Last payment</th><th class="r">Actions</th></tr></thead><tbody>${L.map(c=>{const s=cstats(c);return `<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.company)}</td><td>${esc(c.email)}</td><td>${esc(c.phone)}</td><td>${s.n?s.paid:'—'}</td><td>${s.n}</td><td>${s.last?esc(fdate(s.last)):'—'}</td><td><div class="ra"><button class="icon-btn" data-act="cview" data-id="${c.id}" title="View">${ic('eye',16)}</button><button class="icon-btn" data-act="cedit" data-id="${c.id}" title="Edit">${ic('edit',16)}</button><button class="icon-btn danger" data-act="cdel" data-id="${c.id}" title="Delete">${ic('trash',16)}</button></div></td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty"><div class="ring">${ic('search',36)}</div><h2>No matching clients</h2></div>`}
+function clientForm(c){c=c||{};openModal(`<h2>${c.id?'Edit client':'Add client'}</h2><div class="g2" style="margin-top:14px">${fld('Name *',`<input id="cn" value="${esc(c.name)}">`,'span2')}${fld('Company',`<input id="cc" value="${esc(c.company)}">`)}${fld('Email',`<input id="ce" type="email" value="${esc(c.email)}">`)}${fld('Phone / WhatsApp',`<input id="cp" value="${esc(c.phone)}">`,'span2')}${fld('Address',`<textarea id="ca" rows="2">${esc(c.address)}</textarea>`,'span2')}</div><div id="cerr" style="color:var(--bad);margin-top:10px"></div><div class="mact"><button class="btn primary" id="csv">Save client</button><button class="btn" data-act="close">Cancel</button></div>`);
+ $('#csv').onclick=()=>{const n=$('#cn').value.trim();if(!n){$('#cerr').textContent='Client name is required.';return}
+  if(!c.id){c={id:uid(),createdAt:Date.now()};db.clients.push(c)}Object.assign(c,{name:n,company:$('#cc').value.trim(),email:$('#ce').value.trim(),phone:$('#cp').value.trim(),address:$('#ca').value.trim()});
+  db.receipts.forEach(r=>{if(r.clientId===c.id)r.client=Object.assign({},r.client,{name:c.name,company:c.company,email:c.email,phone:c.phone,address:c.address})});
+  save();closeModal(true);toast('Client saved');if(ui.view==='clients')renderClientList()}}
+function clientView(id){const c=db.clients.find(x=>x.id===id);if(!c)return;const s=cstats(c);openModal(`<h2>${esc(c.name)}</h2><p class="sub">${[c.company,c.email,c.phone].filter(Boolean).map(esc).join(' • ')||'No contact details'}</p>${c.address?`<p style="white-space:pre-line">${esc(c.address)}</p>`:''}<div class="sumbox"><div class="sr"><span>Total paid</span><b>${s.n?s.paid:'—'}</b></div><div class="sr"><span>Receipts</span><b>${s.n}</b></div><div class="sr"><span>Last payment</span><b>${s.last?esc(fdate(s.last)):'—'}</b></div></div>${s.L.length?`<div class="tw" style="margin-top:14px"><table class="t" style="min-width:0"><tbody>${s.L.map(r=>`<tr><td><b>${esc(r.number)}</b></td><td>${fmt(calc(r).paid,r)}</td><td>${stb(r.status)}</td><td><button class="icon-btn" data-act="view" data-id="${r.id}" title="View">${ic('eye',16)}</button></td></tr>`).join('')}</tbody></table></div>`:''}<div class="mact"><button class="btn" data-act="close">Close</button></div>`)}
+
+/* ---------- settings ---------- */
+function vSettings(){const s=db.settings;$('#view').innerHTML=`<div class="ph"><div><h1>SETTINGS</h1><p class="sub">Company details used on every receipt.</p></div></div><div class="cform" style="max-width:820px">
+ <section class="card"><h3>Company information</h3><div class="g2">${fld('Company name',`<input id="s_company" value="${esc(s.company)}">`)}${fld('Tagline',`<input id="s_tagline" value="${esc(s.tagline)}">`)}${fld('Email',`<input id="s_email" value="${esc(s.email)}">`)}${fld('Phone',`<input id="s_phone" value="${esc(s.phone)}">`)}${fld('WhatsApp',`<input id="s_whatsapp" value="${esc(s.whatsapp)}">`)}${fld('Website',`<input id="s_website" value="${esc(s.website)}">`)}${fld('Address',`<textarea id="s_address" rows="2">${esc(s.address)}</textarea>`,'span2')}${fld('Default currency',`<select id="s_currency">${opts(CURS.slice(0,4),s.currency)}</select>`)}${fld('Receipt prefix',`<input id="s_prefix" value="${esc(s.prefix)}" maxlength="8">`)}${fld('Receipt footer message',`<input id="s_footer" value="${esc(s.footer)}">`,'span2')}</div></section>
+ <section class="card"><h3>Logo</h3><div class="logoBox"><img id="lgp" src="${getLogo()}" alt="Logo"><div><p class="sub" style="margin:0 0 10px">Upload your FORMIX logo (PNG recommended). Proportions are always preserved.</p><button class="btn" data-act="logoup">${ic('up',16)} Upload logo</button> <button class="btn" data-act="logoreset">Reset to default</button></div></div></section>
+ <section class="card"><h3>Private access</h3><div class="g2">${fld('New password',`<input id="s_pw" type="password" autocomplete="new-password" placeholder="Leave blank to keep current">`)}${fld('Confirm password',`<input id="s_pw2" type="password" autocomplete="new-password">`)}</div></section>
+ <section class="card"><h3>Backup</h3><p class="sub" style="margin-top:0">Data lives in this browser. Export a backup regularly.</p><div class="mact" style="margin-top:0"><button class="btn" data-act="exp">${ic('download',16)} EXPORT DATA</button><button class="btn" data-act="imp">${ic('up',16)} IMPORT DATA</button></div></section>
+ <button class="btn primary lg" data-act="ssave">${ic('check')} SAVE SETTINGS</button></div>`}
+async function saveSettings(){const g=id=>$('#'+id).value.trim(),s=db.settings,p1=$('#s_pw').value;
+ if(p1&&p1!==$('#s_pw2').value)return toast('Passwords do not match.','err');if(p1&&p1.length<4)return toast('Use at least 4 characters for the password.','err');
+ Object.assign(s,{company:g('s_company')||'FORMIX',tagline:g('s_tagline'),email:g('s_email'),phone:g('s_phone'),whatsapp:g('s_whatsapp'),website:g('s_website'),address:g('s_address'),currency:$('#s_currency').value,prefix:g('s_prefix').toUpperCase().replace(/[^A-Z0-9]/g,'')||'FMX',footer:g('s_footer')});
+ if(p1)s.pass=await sha(p1);save();toast('Settings saved');shell();go('settings')}
+
+/* ---------- backup ---------- */
+function exportData(){saveFile(`formix-backup-${today()}.json`,JSON.stringify(db,null,2),'application/json').then(ok=>ok&&toast('Backup exported'))}
+function importData(file){const fr=new FileReader();fr.onload=()=>{let o;try{o=JSON.parse(fr.result)}catch(e){return toast('That file is not valid JSON.','err')}
+ if(!o||!Array.isArray(o.receipts))return toast('This does not look like a FORMIX backup.','err');
+ confirmBox('Import data?',`This replaces ALL current data with ${o.receipts.length} receipt(s) and ${(o.clients||[]).length} client(s) from the file.`,'Replace data',()=>{db=norm(o);save();ui.draft=null;ui.editing=null;shell();go('dashboard');toast('Data imported')})};fr.readAsText(file)}
+
+/* ---------- login ---------- */
+function login(){$('#root').innerHTML=`<div class="login"><div class="card"><img src="${getLogo()}" alt=""><h1>${esc(db.settings.company)}</h1><p class="sub" style="margin:0">Private receipt generator</p><input id="pw" type="password" placeholder="Password" autocomplete="current-password"><div id="lerr" style="color:var(--bad);min-height:18px"></div><button class="btn primary lg" id="lgo">SIGN IN</button><p class="sub" style="font-size:12px">First time? The default password is <b>formix</b> — change it in Settings.</p></div></div>`;
+ const go1=async()=>{const h=await sha($('#pw').value),want=db.settings.pass||await sha('formix');if(h===want){authed=true;try{sessionStorage.setItem('fx_auth','1')}catch(e){}shell()}else{$('#lerr').textContent='Incorrect password.';$('#pw').select()}};
+ $('#lgo').onclick=go1;$('#pw').onkeydown=e=>{if(e.key==='Enter')go1()};$('#pw').focus()}
+
+/* ---------- actions ---------- */
+const getR=el=>el&&el.dataset.id?db.receipts.find(r=>r.id===el.dataset.id):ui.draft;
+const A={
+ nav:el=>go(el.dataset.v),menu:()=>{$('#side').classList.toggle('open');$('#ov').classList.toggle('show')},close:()=>closeModal(),
+ logout:()=>{authed=false;try{sessionStorage.removeItem('fx_auth')}catch(e){}login()},
+ additem:()=>{ui.draft.items.push({name:'',desc:'',qty:'1',price:''});ui.draft.autoStatus=true;renderItems();updateAll();const n=$$('#items .irow').pop();if(n)$('input',n).focus()},
+ rmitem:el=>{const d=ui.draft;if(d.items.length===1)d.items[0]={name:'',desc:'',qty:'1',price:''};else d.items.splice(+el.dataset.i,1);d.autoStatus=true;renderItems();updateAll()},
+ reset:()=>confirmBox(ui.editing?'Cancel editing?':'Reset form?','Unsaved changes will be lost.','Yes',()=>{ui.draft=null;ui.editing=null;go(ui.view)}),
+ gen:()=>saveReceipt(),
+ pdf:el=>{const r=getR(el);if(!r)return;if(!el.dataset.id){const e=validate(r);showErrs(e);if(e.length)return}downloadPDF(r)},
+ print:el=>{const r=getR(el);if(!r)return;if(!el.dataset.id){const e=validate(r);showErrs(e);if(e.length)return}printR(r)},
+ wa:el=>{const r=getR(el);if(r)waR(r)},mail:el=>{const r=getR(el);if(r)mailR(r)},
+ view:el=>openView(el.dataset.id),
+ edit:el=>{const r=db.receipts.find(x=>x.id===el.dataset.id);if(!r)return;const d=clone(r);d.paidTouched=true;d.autoStatus=false;d.items=d.items.length?d.items:[{name:'',desc:'',qty:'1',price:''}];ui.draft=d;ui.editing=r.id;closeModal(true);go('create')},
+ dup:el=>{const r=db.receipts.find(x=>x.id===el.dataset.id);if(!r)return;const d=clone(r);d.id=uid();d.number=nextNumber();d.date=today();d.payDate=today();d.status='PAID';d.paidTouched=false;d.autoStatus=true;delete d.createdAt;ui.draft=d;ui.editing=null;go('create');toast('Duplicated — review it, then generate.')},
+ del:el=>{const r=db.receipts.find(x=>x.id===el.dataset.id);if(r)confirmBox('Delete receipt?',`Receipt ${r.number} for ${r.client.name} will be permanently deleted.`,'Delete',()=>{db.receipts=db.receipts.filter(x=>x.id!==r.id);save();toast('Receipt deleted');go(ui.view)})},
+ cadd:()=>clientForm(),cedit:el=>clientForm(db.clients.find(c=>c.id===el.dataset.id)),cview:el=>clientView(el.dataset.id),
+ cdel:el=>{const c=db.clients.find(x=>x.id===el.dataset.id);if(c)confirmBox('Delete client?',`${c.name} will be removed from your client list. Existing receipts are kept.`,'Delete',()=>{db.clients=db.clients.filter(x=>x.id!==c.id);db.receipts.forEach(r=>{if(r.clientId===c.id)r.clientId=''});save();toast('Client deleted');renderClientList()})},
+ ssave:()=>saveSettings(),exp:()=>exportData(),imp:()=>$('#impFile').click(),logoup:()=>$('#logoFile').click(),
+ logoreset:()=>{db.settings.logo='';save();shell();go('settings');toast('Default logo restored')}
+};
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(el&&A[el.dataset.act]){e.preventDefault();A[el.dataset.act](el)}});
+$('#impFile').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(f)importData(f)});
+$('#logoFile').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const fr=new FileReader();fr.onload=async()=>{const p=await prepImg(fr.result);if(!p)return toast('Could not read that image.','err');db.settings.logo=p.d;save();shell();go('settings');toast('Logo updated')};fr.readAsDataURL(f)});
+
+/* ---------- boot ---------- */
+load();try{authed=sessionStorage.getItem('fx_auth')==='1'}catch(e){}
+authed?shell():login();
+})();
+</script>
+</body>
+</html>
